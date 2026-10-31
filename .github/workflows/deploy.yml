@@ -26,7 +26,8 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./apps/core/Feelo
+          file: ./apps/core/Feelo/Dockerfile
           push: true
           tags: ghcr.io/fintiflushkaa/feelo-core:latest
 
