@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using API;
 using Infrastructure.Services.Impl;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -27,9 +28,16 @@ builder.Services.AddSwaggerGen(options =>
         });
 });
 
-builder.Services.AddScoped<AuthTokenService>();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.AddAuthorization();
+
+var jwtKey = builder.Configuration["jwt:Key"];
+if (jwtKey == null)
+    throw new ArgumentNullException($"JWT key is empty!");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -39,7 +47,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false,
             ValidAudience = "ProfitableViewAPI",
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["jwt:Key"]!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
         };
         options.Events = new JwtBearerEvents
         {
@@ -55,6 +63,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
+
+builder.Services.AddScoped<AuthTokenService>();
 
 var app = builder.Build();
 

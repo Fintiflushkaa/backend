@@ -122,5 +122,33 @@ public static class EndpointsExtensions
                 return Results.Unauthorized();
             return Results.Ok(FakeUsers[Guid.Parse(userId)].CircadianWindows);
         });
+        app.MapPost("/survey/submit", [Authorize](HttpContext context, SurveyAnswerDto surveyAnswerDto) =>
+        {
+            var userId = context.User.FindFirst(ClaimTypes.PrimarySid)?.Value;
+            if (userId == null)
+                return Results.Unauthorized();
+            var user = FakeUsers[Guid.Parse(userId)];
+            
+            var circadianWindows = new List<CircadianWindowDto>
+            {
+                new()
+                {
+                    Activity = ActivityType.Sleep, End = surveyAnswerDto.WakeTime, Start = surveyAnswerDto.SleepTime
+                }
+            };
+            foreach (var window in surveyAnswerDto.PeakPeriods)
+                circadianWindows.Add(window);
+
+            var sleepShift = new SleepShiftDto
+            {
+                SleepShift = surveyAnswerDto.FreeDaySleepTime - surveyAnswerDto.SleepTime,
+                WakeShift = surveyAnswerDto.FreeDayWakeTime - surveyAnswerDto.WakeTime
+            };
+            FakeUsers[Guid.Parse(userId)] = user with
+            {
+                CircadianWindows = circadianWindows, SleepShift = sleepShift
+            };
+            return Results.Ok();
+        });
     }
 }
