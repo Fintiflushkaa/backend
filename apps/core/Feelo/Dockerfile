@@ -15,7 +15,7 @@ COPY Infrastructure/. ./Infrastructure/
 COPY Domain/. ./Domain/
 
 WORKDIR /src/API
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish -c Debug -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
