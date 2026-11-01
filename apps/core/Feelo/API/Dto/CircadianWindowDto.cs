@@ -1,3 +1,5 @@
+using Domain.Entities;
+
 namespace API.Dto;
 
 internal sealed record CircadianWindowDto

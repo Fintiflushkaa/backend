@@ -2,6 +2,6 @@ namespace API.Dto;
 
 internal sealed record SleepShiftDto
 {
-    public TimeSpan WakeShift { get; init; }
-    public TimeSpan SleepShift { get; init; }
+    public TimeSpan WakeTimeShift { get; init; }
+    public TimeSpan SleepTimeShift { get; init; }
 }

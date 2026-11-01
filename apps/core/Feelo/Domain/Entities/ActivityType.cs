@@ -1,6 +1,6 @@
-namespace API.Dto;
+namespace Domain.Entities;
 
-internal enum ActivityType
+public enum ActivityType
 {
     Sleep,
     Physical,
