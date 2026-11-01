@@ -1,7 +1,13 @@
 namespace API.Dto;
 
-internal sealed record UserDto : BaseUserDto
+internal record UserDto
 {
-    public List<CircadianWindowDto> CircadianWindows { get; init; }
-    public SleepShiftDto SleepShift { get; init; }
+    public UserDto()
+    {
+        Id = Guid.NewGuid();
+    }
+    public Guid Id { get; init; }
+    public string Name { get; init; }
+    public string Email { get; init; }
+    public string Password { get; init; }
 }

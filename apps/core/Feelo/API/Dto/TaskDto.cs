@@ -1,9 +1,10 @@
+using Domain.Entities;
+
 namespace API.Dto;
 
 internal sealed record TaskDto : BaseTaskDto
 {
-    public TaskDto(string name, string description, ActivityType type, TimeSpan duration, Guid ownerId)
-        : base(name, description, type, duration)
+    public TaskDto(Guid ownerId)
     {
         OwnerId = ownerId;
         Id = Guid.NewGuid();

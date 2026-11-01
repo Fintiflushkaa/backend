@@ -8,5 +8,5 @@ internal sealed record SurveyAnswerDto
     public TimeSpan FreeDayWakeTime { get; set; }
     public TimeSpan FreeDaySleepTime { get; set; }
     
-    public List<CircadianWindowDto> PeakPeriods { get; set; }
+    public required List<CircadianWindowDto> PeakPeriods { get; set; }
 }
