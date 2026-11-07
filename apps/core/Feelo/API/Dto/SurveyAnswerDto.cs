@@ -1,12 +1,16 @@
+using API.Dto.User;
+
 namespace API.Dto;
 
-internal sealed record SurveyAnswerDto
-{
-    public TimeSpan WakeTime { get; set; }
-    public TimeSpan SleepTime { get; set; }
-    
-    public TimeSpan FreeDayWakeTime { get; set; }
-    public TimeSpan FreeDaySleepTime { get; set; }
-    
-    public required List<CircadianWindowDto> PeakPeriods { get; set; }
-}
+public sealed record SurveyAnswerDto(
+    SleepScheduleDto WorkDaySleepSchedule,
+    SleepScheduleDto FreeDaySleepSchedule,
+    TimeSpan DesiredSleepDuration,
+    TimeOnly? RequiredWakeTime,
+    AlarmUsage AlarmUsage,
+    PeakPreference GeneralPeak,
+    PeakPreference MentalPeak,
+    PeakPreference PhysicalPeak,
+    PeakPreference SocialPeak,
+    PeakPreference RoutinePeak,
+    DipPreference AfternoonDip);

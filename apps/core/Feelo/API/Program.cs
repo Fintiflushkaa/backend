@@ -1,16 +1,42 @@
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using API;
-using Infrastructure.Services.Impl;
+using API.Mappings;
+using App.Interfaces;
+using Infrastructure;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.MapType<TimeOnly>(() => new OpenApiSchema
+    {
+        Type = JsonSchemaType.String,
+        Pattern = @"^\d{2}:\d{2}:\d{2}(\.\d{1,7})?$",
+        Examples = new List<JsonNode>
+        {
+            JsonValue.Create("23:00:00")!
+        }
+    });
+
+    options.MapType<TimeSpan>(() => new OpenApiSchema
+    {
+        Type = JsonSchemaType.String,
+        Pattern = @"^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$",
+        Examples = new List<JsonNode>
+        {
+            JsonValue.Create("08:00:00")!
+        }
+    });
+    
     options.SupportNonNullableReferenceTypes();
     options.NonNullableReferenceTypesAsRequired();
     
@@ -67,18 +93,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+var connection = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<DBContext>(options => options.UseNpgsql(connection));
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
+builder.Services.AddScoped<PasswordHasher<string>>();
+builder.Services.AddScoped<ApiMapper>();
+builder.Services.AddScoped<ISurveyService, SurveyService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<ICircadianService, CircadianService>();
 builder.Services.AddScoped<AuthTokenService>();
 
 var app = builder.Build();
 
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    await scope.ServiceProvider.GetRequiredService<DBContext>().Database.MigrateAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-app.MapFakeEndpoints();
+app.MapEndpoints();
 app.Run();
