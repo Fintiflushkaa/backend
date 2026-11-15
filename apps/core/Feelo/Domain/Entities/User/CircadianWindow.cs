@@ -1,4 +1,4 @@
-using Domain.Entities.Task;
+using Domain.Entities.Circadian;
 
 namespace Domain.Entities.User;
 

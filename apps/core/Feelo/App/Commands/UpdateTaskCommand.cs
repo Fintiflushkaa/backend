@@ -9,6 +9,8 @@ public sealed record UpdateTaskCommand(
     TaskCategory? Type = null,
     TimeSpan? Duration = null,
     DateTime? From = null,
+    TaskPriority? Priority = null,
+    DateTime? Deadline = null,
     string? Description = null,
     bool DescriptionSpecified = false
 );

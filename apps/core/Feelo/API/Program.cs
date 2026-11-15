@@ -103,6 +103,8 @@ builder.Services.AddScoped<ApiMapper>();
 builder.Services.AddScoped<ISurveyService, SurveyService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<ICircadianService, CircadianService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPlannerService, DayPlannerService>();
 builder.Services.AddScoped<AuthTokenService>();
 
 var app = builder.Build();

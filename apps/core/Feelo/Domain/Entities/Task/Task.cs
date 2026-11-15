@@ -5,11 +5,11 @@ namespace Domain.Entities.Task;
 [Table("Tasks")]
 public class Task
 {
-    public Task(Guid ownerId, string name, TaskCategory type, TimeSpan duration, DateTime from,
-        string? description = null)
+    public Task(Guid id, Guid ownerId, string name, TaskCategory type, TimeSpan duration, DateTime from,
+        TaskPriority priority, DateTime? deadline = null, string? description = null)
     {
+        Id = id;
         OwnerId = ownerId;
-        Id = Guid.NewGuid();
         Name = name;
         Description = description;
         Type = type;
@@ -17,6 +17,9 @@ public class Task
         Created = DateTime.UtcNow;
         From = from;
         To = from + duration;
+        Priority = priority;
+        Deadline = deadline;
+        Version = 0;
     }
     
     public Guid Id { get; }
@@ -31,9 +34,13 @@ public class Task
     public DateTime Updated { get; private set; }
     public DateTime From { get; private set; }
     public DateTime To { get; private set; }
+    public TaskPriority Priority { get; private set; }
+    public DateTime? Deadline { get; private set; }
+    
+    public int Version { get; private set; }
 
-    public void UpdateTask(string? name, TaskCategory? type, TimeSpan? duration, DateTime? from,
-        string? description = null, bool descriptionSpecified = false)
+    public void UpdateTask(string? name, TaskCategory? type, TimeSpan? duration, DateTime? from, TaskPriority? priority,
+        DateTime? deadline, string? description = null, bool descriptionSpecified = false)
     {
         Name = name ?? Name;
         if (descriptionSpecified || description is not null)
@@ -48,5 +55,8 @@ public class Task
         else if (from is not null && duration is not null)
             To = from.Value + duration.Value;
         Updated = DateTime.UtcNow;
+        Priority = priority ?? Priority;
+        Deadline = deadline ?? Deadline;
+        ++Version;
     }
 }
