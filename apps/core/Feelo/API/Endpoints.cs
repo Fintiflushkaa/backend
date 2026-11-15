@@ -6,6 +6,7 @@ using API.Dto.User;
 using API.Mappings;
 using App.Commands;
 using App.Interfaces;
+using App.Synchronization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -78,6 +79,30 @@ public static class Endpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces<TaskDto>(StatusCodes.Status201Created);
+        app.MapPost("/tasks/createmany", [Authorize] async (HttpContext context,
+                List<BaseTaskDto> newTasksDto,
+                ITaskService taskService,
+                ApiMapper mapper) =>
+            {
+                var userId = context.User.FindFirst(ClaimTypes.PrimarySid)?.Value;
+                if (userId == null)
+                    return Results.Unauthorized();
+
+                var commands = newTasksDto
+                    .Select(dto => mapper.Map(dto, new Guid(userId)))
+                    .ToList();
+            
+                var result = await taskService.SyncTasks(commands);
+
+                if (result.IsSuccess)
+                {
+                    return Results.Ok(result.Value);
+                }
+                return Results.BadRequest(result.Errors);
+            })
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces<Dictionary<Guid, TaskSyncResult>>();
         app.MapGet("/tasks/", [Authorize] async (HttpContext context,
                 ITaskService taskService,
                 ApiMapper mapper) =>
@@ -160,5 +185,20 @@ public static class Endpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status400BadRequest)
             .Produces<List<CircadianCurveDto>>();
+        app.MapGet("/profile", [Authorize] async (HttpContext context,
+                IUserService userService,
+                ApiMapper mapper) =>
+        {
+            var userId = context.User.FindFirst(ClaimTypes.PrimarySid)?.Value;
+            if (userId == null)
+                return Results.Unauthorized();
+            
+            var result = await userService.GetUserById(new Guid(userId));
+            if (result.IsFailed)
+                return Results.BadRequest(result.Errors);
+            return Results.Ok(mapper.Map(result.Value));
+        })
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status400BadRequest);
     }
 }

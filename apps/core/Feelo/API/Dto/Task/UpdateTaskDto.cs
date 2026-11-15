@@ -22,4 +22,6 @@ public sealed record UpdateTaskDto
     public TaskCategory? Type { get; init; }
     public DateTime? From { get; init; }
     public TimeSpan? Duration { get; init; }
+    public TaskPriority? Priority { get; init; }
+    public DateTime? Deadline { get; init; }
 }

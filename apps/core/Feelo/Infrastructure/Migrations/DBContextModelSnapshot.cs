@@ -31,6 +31,9 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -47,6 +50,9 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("To")
                         .HasColumnType("timestamp with time zone");
 
@@ -55,6 +61,10 @@ namespace Infrastructure.Migrations
 
                     b.Property<DateTime>("Updated")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

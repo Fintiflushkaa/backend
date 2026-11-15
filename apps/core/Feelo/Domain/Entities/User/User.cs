@@ -33,6 +33,7 @@ public sealed record User
         ArgumentNullException.ThrowIfNull(sleepProfile);
         ArgumentNullException.ThrowIfNull(preferences);
 
+        OnboardingCompletedAt = DateTimeOffset.UtcNow;
         SleepProfile = sleepProfile;
         RhythmPreferences = preferences;
     }

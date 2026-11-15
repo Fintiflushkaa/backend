@@ -7,12 +7,3 @@ public enum TaskCategory
     Mental,
     Routine,
 }
-
-public enum EnergyCurveKind
-{
-    General,
-    Mental,
-    Physical,
-    Social,
-    Routine
-}

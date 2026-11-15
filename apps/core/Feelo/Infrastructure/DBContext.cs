@@ -5,7 +5,7 @@ using TaskEntity = Domain.Entities.Task.Task;
 
 namespace Infrastructure;
 
-public sealed class DBContext : DbContext
+public sealed class DBContext : Microsoft.EntityFrameworkCore.DbContext
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<TaskEntity> Tasks => Set<TaskEntity>();
@@ -58,6 +58,9 @@ public sealed class DBContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade);
+            
+            entity.Property(e => e.Version)
+                .IsConcurrencyToken();
         });
     }
 }
