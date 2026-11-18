@@ -199,6 +199,7 @@ public static class Endpoints
             return Results.Ok(mapper.Map(result.Value));
         })
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status400BadRequest);
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces<ProfileDto>();
     }
 }
