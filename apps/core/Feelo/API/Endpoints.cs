@@ -67,18 +67,17 @@ public static class Endpoints
 
             var command = mapper.Map(newTaskDto, new Guid(userId));
             
-            var result = await taskService.CreateTask(command);
+            var result = await taskService.SyncTasks([command]);
 
             if (result.IsSuccess)
             {
-                var task = mapper.Map(result.Value.Item2);
-                return Results.Created($"/tasks/{task.Id}", task);
+                return Results.Ok(result.Value);
             }
             return Results.BadRequest(result.Errors);
         })
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status400BadRequest)
-        .Produces<TaskDto>(StatusCodes.Status201Created);
+        .Produces<Dictionary<Guid, TaskSyncResult>>();
         app.MapPost("/tasks/createmany", [Authorize] async (HttpContext context,
                 List<BaseTaskDto> newTasksDto,
                 ITaskService taskService,
@@ -140,12 +139,12 @@ public static class Endpoints
 
                 var result = await taskService.UpdateTask(command);
                 if (result.IsSuccess)
-                    return Results.Ok();
+                    return Results.Ok(result.Value);
                 return Results.BadRequest(result.Errors);
             })
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status400BadRequest)
-            .Produces(StatusCodes.Status200OK);
+            .Produces<Dictionary<Guid, TaskSyncResult>>();
         app.MapDelete("/tasks/{taskId:guid}/", [Authorize] async (HttpContext context,
                 Guid taskId,
                 ITaskService taskService,

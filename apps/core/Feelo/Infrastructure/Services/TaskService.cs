@@ -68,7 +68,7 @@ public class TaskService : ITaskService
         return tasks;
     }
 
-    public async Task<Result> UpdateTask(UpdateTaskCommand command)
+    public async Task<Result<Dictionary<Guid, TaskSyncResult>>> UpdateTask(UpdateTaskCommand command)
     {
         if (command.Duration < TimeSpan.Zero)
             return Result.Fail("Длительность задачи не может быть отрицательной");
@@ -87,7 +87,10 @@ public class TaskService : ITaskService
         await _dbContext.SaveChangesAsync();
         _logger.LogInformation("Задача {TaskId} была обновлена для пользователя {UserId}", task.Id, user.Id);
         await transaction.CommitAsync();
-        return Result.Ok();
+        return Result.Ok(new Dictionary<Guid, TaskSyncResult>
+        {
+            {task.Id, new TaskSyncResult(TaskSyncStatus.Modified)}
+        });
     }
 
     public async Task<Result> DeleteTask(DeleteTaskCommand command)
