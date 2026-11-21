@@ -10,4 +10,6 @@ public interface IPlannerService
     public Task<Result<PlanningResult>> PlanTask(CreateTaskCommand command, User user);
     
     public Task<Result<PlanningResult>> PlanMultipleTasks(List<CreateTaskCommand> commands, User user);
+
+    public Task<Result<DateTime>> FindStartForTask(CreateTaskCommand command, User user);
 }

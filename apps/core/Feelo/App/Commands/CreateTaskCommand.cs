@@ -8,6 +8,7 @@ public sealed record CreateTaskCommand(
     string Name,
     string? Description,
     TaskCategory Type,
+    DateOnly Date,
     DateTime? From,
     TimeSpan Duration,
     TaskPriority Priority,

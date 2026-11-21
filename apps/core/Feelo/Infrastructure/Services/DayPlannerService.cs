@@ -7,25 +7,15 @@ using Domain.Entities.User;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using static System.Array;
 using DomainTask = Domain.Entities.Task.Task;
 using Task = System.Threading.Tasks.Task;
 
 namespace Infrastructure.Services;
 
-public class DayPlannerService : IPlannerService
+public class DayPlannerService(ILogger<DayPlannerService> logger, DBContext dbContext) : IPlannerService
 {
-    private readonly ILogger<DayPlannerService> _logger;
-    private readonly DBContext _dbContext;
-
     private static readonly TimeSpan Gap = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan Step = TimeSpan.FromMinutes(15);
-
-    public DayPlannerService(ILogger<DayPlannerService> logger, DBContext dbContext)
-    {
-        _logger = logger;
-        _dbContext = dbContext;
-    }
 
     public async Task<Result<PlanningResult>> PlanTask(CreateTaskCommand command, User user)
     {
@@ -52,25 +42,71 @@ public class DayPlannerService : IPlannerService
         var now = DateTime.UtcNow;
         var (validCommands, unplannedTasks) = ValidateCommands(commands, now);
         if (validCommands.Count == 0)
-            return Result.Ok(new PlanningResult(Empty<Guid>(), unplannedTasks));
+            return Result.Ok(new PlanningResult([], unplannedTasks));
 
-        var day = await LoadPlanningDay(user, now);
-        var newTasks = PlaceTasks(validCommands, day, unplannedTasks);
+        var newTasks = new List<DomainTask>();
+        foreach (var group in validCommands.GroupBy(c => c.Date).OrderBy(g => g.Key))
+        {
+            var planningDay = await LoadPlanningDay(user, group.Key, now);
+            if (planningDay.IsFailed)
+            {
+                var message = string.Join("; ", planningDay.Errors.Select(e => e.Message));
+                unplannedTasks.AddRange(group.Select(c => new UnplannedTask(c.Id, c.Name, message)));
+                continue;
+            }
+            var day = planningDay.Value;
+            day.PlannedTasks.AddRange(newTasks.Where(t =>
+                t.From < day.End + Gap && t.To > day.Start - Gap));
+            newTasks.AddRange(PlaceTasks(group.ToList(), day, unplannedTasks));
+        }
 
         await SavePlannedTasks(newTasks);
-        _logger.LogInformation("Планирование пользователя {UserId}: размещено {Planned}, не размещено {Unplanned}",
+        logger.LogInformation("Планирование пользователя {UserId}: размещено {Planned}, не размещено {Unplanned}",
             user.Id, newTasks.Count, unplannedTasks.Count);
-        return Result.Ok(new PlanningResult(newTasks.Select(t => t.Id).ToList(), unplannedTasks));
+        return Result.Ok(new PlanningResult(newTasks, unplannedTasks));
     }
 
-    private async Task<PlanningDay> LoadPlanningDay(User user, DateTime now)
+    public async Task<Result<DateTime>> FindStartForTask(CreateTaskCommand command, User user)
     {
-        var date = DateOnly.FromDateTime(now);
-        var curves = CircadianCalculator.Calculate(user.SleepProfile!, user.RhythmPreferences!, date,
-            TimeZoneInfo.Utc).ToDictionary(c => c.Kind);
-        var (start, end) = GetDayBounds(user.SleepProfile!, date);
-        var plannedTasks = await LoadPlannedTasks(user.Id, start, end);
-        return new PlanningDay(now, start, end, curves, plannedTasks);
+        var validation = ValidatePlanningRequest([command], user);
+        if (validation.IsFailed)
+            return Result.Fail(validation.Errors);
+
+        var now = DateTime.UtcNow;
+        var error = GetValidationError(command, now);
+        if (error is not null)
+            return Result.Fail(error);
+
+        var planningDay = await LoadPlanningDay(user, command.Date, now, command.Id);
+        if (planningDay.IsFailed)
+            return Result.Fail(planningDay.Errors);
+        var day = planningDay.Value;
+        var slots = GetFreeSlots(day.Start, day.End, day.PlannedTasks);
+        var (start, _) = FindBestStart(command, day.Curves[GetCurveKind(command.Type)].Points, slots, now);
+        return start.HasValue
+            ? Result.Ok(start.Value)
+            : Result.Fail("Нет свободного места до конца дня или дедлайна");
+    }
+
+    private async Task<Result<PlanningDay>> LoadPlanningDay(User user, DateOnly date, DateTime now,
+        Guid? excludedTaskId = null)
+    {
+        Dictionary<EnergyCurveKind, CircadianCurve> curves;
+        DateTime start, end;
+        try
+        {
+            var window = user.SleepProfile!.GetAwakeWindow(date);
+            start = DateTime.SpecifyKind(window.Start, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(window.End, DateTimeKind.Utc);
+            curves = CircadianCalculator.Calculate(user.SleepProfile, user.RhythmPreferences!, date,
+                TimeZoneInfo.Utc).ToDictionary(c => c.Kind);
+        }
+        catch (ArgumentException error)
+        {
+            return Result.Fail(error.Message);
+        }
+        var plannedTasks = await LoadPlannedTasks(user.Id, start, end, excludedTaskId);
+        return Result.Ok(new PlanningDay(now, start, end, curves, plannedTasks));
     }
 
     private sealed record PlanningDay(
@@ -107,21 +143,14 @@ public class DayPlannerService : IPlannerService
         return (valid, unplanned);
     }
 
-    private static (DateTime Start, DateTime End) GetDayBounds(SleepProfile sleep, DateOnly date)
-    {
-        var schedule = date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday
-            ? sleep.FreeDays : sleep.WorkDays;
-        var start = date.ToDateTime(schedule.WakeTime, DateTimeKind.Utc);
-        var end = date.ToDateTime(schedule.SleepStart, DateTimeKind.Utc);
-        return (start, end <= start ? end.AddDays(1) : end);
-    }
-
-    private Task<List<DomainTask>> LoadPlannedTasks(Guid userId, DateTime start, DateTime end)
+    private Task<List<DomainTask>> LoadPlannedTasks(Guid userId, DateTime start, DateTime end,
+        Guid? excludedTaskId = null)
     {
         var searchStart = start - Gap;
         var searchEnd = end + Gap;
-        return _dbContext.Set<DomainTask>().AsNoTracking()
+        return dbContext.Set<DomainTask>().AsNoTracking()
             .Where(t => t.OwnerId == userId && t.From < searchEnd && t.To > searchStart)
+            .Where(t => !excludedTaskId.HasValue || t.Id != excludedTaskId.Value)
             .ToListAsync();
     }
 
@@ -143,10 +172,10 @@ public class DayPlannerService : IPlannerService
             }
 
             var task = new DomainTask(command.Id, command.UserId, command.Name, command.Type, command.Duration,
-                taskStart.Value, command.Priority, command.Deadline, command.Description);
+                taskStart.Value, command.Priority, command.Date, command.Deadline, command.Description);
             tasks.Add(task);
             day.PlannedTasks.Add(task);
-            _logger.LogDebug("Подобран слот для задачи {TaskId}: {Start}, Fit: {Fit}", task.Id, taskStart.Value, fit);
+            logger.LogDebug("Подобран слот для задачи {TaskId}: {Start}, Fit: {Fit}", task.Id, taskStart.Value, fit);
         }
         return tasks;
     }
@@ -155,12 +184,15 @@ public class DayPlannerService : IPlannerService
     {
         if (tasks.Count == 0)
             return;
-        await _dbContext.Set<DomainTask>().AddRangeAsync(tasks);
-        await _dbContext.SaveChangesAsync();
+        await dbContext.Set<DomainTask>().AddRangeAsync(tasks);
+        await dbContext.SaveChangesAsync();
     }
 
     private static string? GetValidationError(CreateTaskCommand command, DateTime now)
     {
+        if (command.Date == default)
+            return "Укажите дату задачи";
+
         if (command.Duration <= TimeSpan.Zero)
             return "Длительность должна быть больше нуля";
 

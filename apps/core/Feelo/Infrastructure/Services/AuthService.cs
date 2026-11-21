@@ -13,11 +13,11 @@ public class AuthService : IAuthService
 {
     private readonly ILogger<AuthService> _logger;
     private readonly DBContext _dbContext;
-    private readonly PasswordHasher<string> _passwordHasher;
+    private readonly IPasswordHasher<string> _passwordHasher;
     private readonly IAuthTokenService _authTokenService;
     
     public AuthService(ILogger<AuthService> logger, DBContext dbContext,
-        PasswordHasher<string> passwordHasher, IAuthTokenService authTokenService)
+        IPasswordHasher<string> passwordHasher, IAuthTokenService authTokenService)
     {
         _logger = logger;
         _dbContext = dbContext;

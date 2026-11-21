@@ -17,11 +17,10 @@ public static class CircadianCalculator
         if (!Enum.IsDefined(preferences.AfternoonDip))
             throw new ArgumentException("Некорректный ответ о времени спада");
 
-        var schedule = date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday
-            ? sleep.FreeDays : sleep.WorkDays;
-        var wake = schedule.WakeTime.ToTimeSpan().TotalHours;
-        var bed = schedule.SleepStart.ToTimeSpan().TotalHours;
-        if (bed <= wake) bed += 24;
+        var window = sleep.GetAwakeWindow(date);
+        var midnight = date.ToDateTime(TimeOnly.MinValue);
+        var wake = (window.Start - midnight).TotalHours;
+        var bed = (window.End - midnight).TotalHours;
 
         var dip = preferences.AfternoonDip switch
         {

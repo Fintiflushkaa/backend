@@ -57,7 +57,7 @@ public static class Endpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status200OK);
         app.MapPost("/tasks/create", [Authorize] async (HttpContext context,
-                BaseTaskDto newTaskDto,
+                CreateTaskDto newTaskDto,
                 ITaskService taskService,
                 ApiMapper mapper) =>
         {
@@ -79,7 +79,7 @@ public static class Endpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces<Dictionary<Guid, TaskSyncResult>>();
         app.MapPost("/tasks/createmany", [Authorize] async (HttpContext context,
-                List<BaseTaskDto> newTasksDto,
+                List<CreateTaskDto> newTasksDto,
                 ITaskService taskService,
                 ApiMapper mapper) =>
             {
