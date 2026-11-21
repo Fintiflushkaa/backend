@@ -10,7 +10,18 @@ permissions:
   packages: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test ./apps/core/Feelo/Tests/Tests.csproj
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
