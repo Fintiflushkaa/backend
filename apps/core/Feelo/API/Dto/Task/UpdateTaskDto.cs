@@ -21,7 +21,11 @@ public sealed record UpdateTaskDto
     public bool DescriptionSpecified { get; private init; }
     public TaskCategory? Type { get; init; }
     public DateTime? From { get; init; }
+    public DateOnly? Date { get; init; }
     public TimeSpan? Duration { get; init; }
     public TaskPriority? Priority { get; init; }
     public DateTime? Deadline { get; init; }
+    public int Version { get; init; }
+    public bool? IsCompleted { get; init; }
+    public DateTime? CompletedAt { get; init; }
 }

@@ -1,5 +1,6 @@
 namespace App.Planning;
+using DomainTask = Domain.Entities.Task.Task;
 
 public sealed record PlanningResult(
-    IReadOnlyList<Guid> PlannedTaskIds,
+    IReadOnlyList<DomainTask> PlannedTasks,
     IReadOnlyList<UnplannedTask> UnplannedTasks);

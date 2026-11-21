@@ -5,7 +5,7 @@ using TaskEntity = Domain.Entities.Task.Task;
 
 namespace Infrastructure;
 
-public sealed class DBContext : Microsoft.EntityFrameworkCore.DbContext
+public class DBContext : Microsoft.EntityFrameworkCore.DbContext
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<TaskEntity> Tasks => Set<TaskEntity>();

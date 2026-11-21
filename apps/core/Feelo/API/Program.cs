@@ -23,7 +23,7 @@ builder.Services.AddSwaggerGen(options =>
         Pattern = @"^\d{2}:\d{2}:\d{2}(\.\d{1,7})?$",
         Examples = new List<JsonNode>
         {
-            JsonValue.Create("23:00:00")!
+            JsonValue.Create("23:00:00")
         }
     });
 
@@ -33,7 +33,7 @@ builder.Services.AddSwaggerGen(options =>
         Pattern = @"^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$",
         Examples = new List<JsonNode>
         {
-            JsonValue.Create("08:00:00")!
+            JsonValue.Create("08:00:00")
         }
     });
     
@@ -98,7 +98,7 @@ var connection = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<DBContext>(options => options.UseNpgsql(connection));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
-builder.Services.AddScoped<PasswordHasher<string>>();
+builder.Services.AddScoped<IPasswordHasher<string>, PasswordHasher<string>>();
 builder.Services.AddScoped<ApiMapper>();
 builder.Services.AddScoped<ISurveyService, SurveyService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
