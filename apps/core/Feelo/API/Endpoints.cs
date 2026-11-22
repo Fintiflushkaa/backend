@@ -57,7 +57,7 @@ public static class Endpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status200OK);
         app.MapPost("/tasks/create", [Authorize] async (HttpContext context,
-                CreateTaskDto newTaskDto,
+                TaskDto newTaskDto,
                 ITaskService taskService,
                 ApiMapper mapper) =>
         {
@@ -71,15 +71,15 @@ public static class Endpoints
 
             if (result.IsSuccess)
             {
-                return Results.Ok(result.Value);
+                return Results.Ok(mapper.Map(result.Value));
             }
             return Results.BadRequest(result.Errors);
         })
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status400BadRequest)
-        .Produces<Dictionary<Guid, TaskSyncResult>>();
+        .Produces<Dictionary<Guid, TaskSyncResult<TaskDto>>>();
         app.MapPost("/tasks/createmany", [Authorize] async (HttpContext context,
-                List<CreateTaskDto> newTasksDto,
+                List<TaskDto> newTasksDto,
                 ITaskService taskService,
                 ApiMapper mapper) =>
             {
@@ -95,13 +95,13 @@ public static class Endpoints
 
                 if (result.IsSuccess)
                 {
-                    return Results.Ok(result.Value);
+                    return Results.Ok(mapper.Map(result.Value));
                 }
                 return Results.BadRequest(result.Errors);
             })
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status400BadRequest)
-            .Produces<Dictionary<Guid, TaskSyncResult>>();
+            .Produces<Dictionary<Guid, TaskSyncResult<TaskDto>>>();
         app.MapGet("/tasks/", [Authorize] async (HttpContext context,
                 ITaskService taskService,
                 ApiMapper mapper) =>
@@ -139,12 +139,12 @@ public static class Endpoints
 
                 var result = await taskService.UpdateTask(command);
                 if (result.IsSuccess)
-                    return Results.Ok(result.Value);
+                    return Results.Ok(mapper.Map(result.Value));
                 return Results.BadRequest(result.Errors);
             })
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status400BadRequest)
-            .Produces<Dictionary<Guid, TaskSyncResult>>();
+            .Produces<Dictionary<Guid, TaskSyncResult<TaskDto>>>();
         app.MapDelete("/tasks/{taskId:guid}/", [Authorize] async (HttpContext context,
                 Guid taskId,
                 ITaskService taskService,
